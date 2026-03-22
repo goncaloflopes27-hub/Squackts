@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Iterator
 
@@ -46,3 +47,13 @@ def transaction() -> Iterator[sqlite3.Connection]:
         raise
     finally:
         conn.close()
+
+
+def backup_to(dest_path: Path | None = None) -> Path:
+    ensure_directories()
+    target = dest_path or (BACKUPS_DIR / f"squackts_enterprise_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with connect() as src, sqlite3.connect(target) as dst:
+        src.backup(dst)
+        dst.commit()
+    return target
